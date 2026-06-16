@@ -1,0 +1,13 @@
+{
+  "name": "gastro-ekg-funnel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Empfehlungslink-Generator für Gastro-Einkaufsgemeinschaft",
+  "scripts": {
+    "build": "npx @11ty/eleventy",
+    "dev": "npx @11ty/eleventy --serve"
+  },
+  "dependencies": {
+    "@11ty/eleventy": "^3.1.2"
+  }
+}

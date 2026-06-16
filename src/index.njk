@@ -1,0 +1,521 @@
+---
+permalink: /index.html
+---
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Empfehlungslink generieren – Gastro-EKG</title>
+    <meta name="description" content="Generieren Sie Ihren persönlichen Empfehlungslink für die Gastro-Einkaufsgemeinschaft.">
+
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=open-sans:400,600,700&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: 'Open Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            color: #1f2124;
+            background: #1f2124;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        a { color: inherit; text-decoration: none; }
+        button { font-family: inherit; cursor: pointer; }
+
+        /* Page */
+        .page {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: linear-gradient(rgba(31,33,36,0.55), rgba(31,33,36,0.65)), url('/images/hero.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+            padding-left: 24px;
+            padding-right: 24px;
+        }
+        @media (max-width: 640px) {
+            .container { padding-left: 16px; padding-right: 16px; }
+        }
+
+        /* Header */
+        .site-header {
+            padding-top: 20px;
+            padding-bottom: 24px;
+        }
+        .site-header__inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
+        .site-header__logo img {
+            display: block;
+            height: 100px;
+            width: auto;
+            padding-top: 20px;
+        }
+        .btn-kontakt {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 30px;
+            border-radius: 9999px;
+            border: 2px solid #ffffff;
+            background-color: transparent;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .btn-kontakt:hover {
+            background-color: #F7A712;
+            border-color: #F7A712;
+            color: #ffffff;
+        }
+
+        /* Hero (Mitte) */
+        .hero {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 64px 0;
+            color: #ffffff;
+        }
+        .hero__inner {
+            max-width: 640px;
+            margin: 0 auto;
+            text-align: center;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+        }
+        .hero h1 {
+            font-size: 48px;
+            line-height: 1.15;
+            font-weight: 700;
+        }
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 32px; }
+        }
+        .hero p {
+            margin-top: 24px;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+        @media (max-width: 768px) {
+            .hero p { font-size: 16px; }
+        }
+
+        /* Form */
+        .hero__form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        .input-kundennummer {
+            flex: 1 1 340px;
+            min-width: 0;
+            padding: 10px 30px;
+            border-radius: 9999px;
+            border: 2px solid #ffffff;
+            background-color: #ffffff;
+            color: #1f2124;
+            font-size: 16px;
+            font-weight: 500;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .input-kundennummer::placeholder { color: #9aa1a8; }
+        .input-kundennummer:focus {
+            border-color: #F7A712;
+            box-shadow: 0 0 0 4px rgba(247, 167, 18, 0.25);
+        }
+        .btn-generieren {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            white-space: nowrap;
+            padding: 10px 30px;
+            border-radius: 9999px;
+            border: 2px solid #86BC24;
+            background-color: #86BC24;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+        .btn-generieren:hover:not(:disabled) {
+            background-color: #6da01b;
+            border-color: #6da01b;
+        }
+        .btn-generieren:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Footer */
+        .site-footer {
+            position: relative;
+            background-color: #15171a;
+            color: #ffffff;
+            font-size: 12px;
+        }
+        .site-footer__inner {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .site-footer__links {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+        }
+        .site-footer a {
+            color: #ffffff;
+            font-weight: 600;
+            transition: color 0.15s;
+        }
+        .site-footer a:hover { color: #F7A712; }
+
+        /* Modal */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+            z-index: 9999;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+        .modal-backdrop.is-open {
+            display: flex;
+            animation: fade-in 0.18s ease-out;
+        }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+            padding: 40px;
+        }
+        .modal__close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            border: none;
+            background: transparent;
+            color: #9aa1a8;
+            transition: background-color 0.15s, color 0.15s;
+        }
+        .modal__close:hover {
+            background-color: #f4f4f5;
+            color: #1f2124;
+        }
+        .modal__eyebrow {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: #F7A712;
+        }
+        .modal__caption { margin-top: 4px; font-size: 14px; color: #1f2124; }
+        .modal__caption strong { font-weight: 700; }
+
+        .link-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+            padding: 6px 6px 6px 20px;
+            border: 2px solid #e4e4e7;
+            border-radius: 9999px;
+        }
+        .link-row__url {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 13px;
+            color: #1f2124;
+        }
+        .link-row__copy {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            border: none;
+            background-color: #F7A712;
+            color: #ffffff;
+            transition: background-color 0.2s;
+        }
+        .link-row__copy.is-copied { background-color: #86BC24; }
+
+        .modal__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 30px;
+        }
+        .modal__actions > * { flex: 1; min-width: 200px; }
+
+        .btn-funnel {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            white-space: nowrap;
+            padding: 10px 30px;
+            border-radius: 9999px;
+            border: 2px solid #1f2124;
+            background-color: #1f2124;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+        .btn-funnel:hover { background-color: #2a2d31; border-color: #2a2d31; }
+
+        .btn-whatsapp {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            white-space: nowrap;
+            padding: 10px 30px;
+            border-radius: 9999px;
+            border: 2px solid #25D366;
+            background-color: #25D366;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+        .btn-whatsapp:hover { background-color: #1ebc55; border-color: #1ebc55; }
+    </style>
+</head>
+<body>
+
+<div class="page">
+
+    {# === HEADER === #}
+    <header class="site-header">
+        <div class="container site-header__inner">
+            <a href="#top" class="site-header__logo">
+                <img
+                    src="https://gastro-einkaufsgemeinschaft.de/wp-content/uploads/2025/07/gastro_logo_neu_500px_white-1.png"
+                    alt="Gastro-Einkaufsgemeinschaft"
+                >
+            </a>
+            <a href="https://gastro-einkaufsgemeinschaft.de/#kontakt" target="_blank" rel="noopener" class="btn-kontakt">Kontakt</a>
+        </div>
+    </header>
+
+    {# === HERO === #}
+    <main id="top" class="hero">
+        <div class="container">
+            <div class="hero__inner">
+                <h1>Lorem ipsum dolor sit amet</h1>
+                <p>
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.<br>
+                    Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.<br>
+                    Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.<br>
+                    Duis aute irure dolor in reprehenderit in voluptate velit esse cillum.
+                </p>
+                <form id="empfehlung-form" class="hero__form" autocomplete="off">
+                    <input
+                        type="text"
+                        id="kundennummer"
+                        name="kundennummer"
+                        placeholder="Kundennummer eingeben"
+                        class="input-kundennummer"
+                        autocomplete="off"
+                    >
+                    <button type="submit" class="btn-generieren" id="btn-generieren" disabled>Link generieren</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    {# === FOOTER === #}
+    <footer class="site-footer">
+        <div class="container site-footer__inner">
+            <div class="site-footer__links">
+                <a href="https://gastro-einkaufsgemeinschaft.de/impressum" target="_blank" rel="noopener">Impressum</a>
+                <a href="https://gastro-einkaufsgemeinschaft.de/datenschutz" target="_blank" rel="noopener">Datenschutz</a>
+            </div>
+            <p>Webdesign by
+                <a href="https://www.aranes.de" target="_blank" rel="noopener">ARANES GmbH &amp; Co. KG</a>
+            </p>
+        </div>
+    </footer>
+
+    {# === MODAL === #}
+    <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal" role="document">
+            <button type="button" class="modal__close" id="modal-close" aria-label="Schließen">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="20" height="20">
+                    <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"/>
+                </svg>
+            </button>
+
+            <p class="modal__eyebrow" id="modal-title">Empfehlungslink</p>
+            <p class="modal__caption">Kundennummer: <strong id="modal-kundennummer"></strong></p>
+
+            <div class="link-row">
+                <span class="link-row__url" id="modal-link"></span>
+                <button type="button" class="link-row__copy" id="btn-copy" aria-label="Link kopieren" title="Link kopieren">
+                    <svg id="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="16" height="16">
+                        <path d="M5 3.25V4H2.75A1.75 1.75 0 0 0 1 5.75v7.5A1.75 1.75 0 0 0 2.75 15h7.5A1.75 1.75 0 0 0 12 13.25V12h.75A1.75 1.75 0 0 0 14.5 10.25v-7.5A1.75 1.75 0 0 0 12.75 1h-6A1.75 1.75 0 0 0 5 3.25Zm.5 0a.25.25 0 0 1 .25-.25h6a.25.25 0 0 1 .25.25v7a.25.25 0 0 1-.25.25h-6a.25.25 0 0 1-.25-.25v-7Z"/>
+                        <path d="M2.5 5.5a.25.25 0 0 1 .25-.25H4V10.25c0 .966.784 1.75 1.75 1.75H10.5V13.25a.25.25 0 0 1-.25.25h-7.5a.25.25 0 0 1-.25-.25v-7.5Z"/>
+                    </svg>
+                    <svg id="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="16" height="16" style="display:none">
+                        <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="modal__actions">
+                <a href="#" target="_blank" rel="noopener" class="btn-funnel" id="btn-funnel">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="16" height="16">
+                        <path d="M8.75 2.75a.75.75 0 0 0 0 1.5h1.69L5.22 9.47a.75.75 0 0 0 1.06 1.06l5.22-5.22v1.69a.75.75 0 0 0 1.5 0v-3.5a.75.75 0 0 0-.75-.75h-3.5Z"/>
+                        <path d="M3.5 3.75a.25.25 0 0 1 .25-.25h3a.75.75 0 0 0 0-1.5h-3A1.75 1.75 0 0 0 2 3.75v8.5c0 .966.784 1.75 1.75 1.75h8.5A1.75 1.75 0 0 0 14 12.25v-3a.75.75 0 0 0-1.5 0v3a.25.25 0 0 1-.25.25h-8.5a.25.25 0 0 1-.25-.25v-8.5Z"/>
+                    </svg>
+                    Zum Funnel
+                </a>
+                <a href="#" target="_blank" rel="noopener" class="btn-whatsapp" id="btn-whatsapp">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                        <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zM8.53 7.33c-.16 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.16-.48-.27-.25-.14-1.47-.74-1.69-.82-.23-.08-.4-.12-.56.12-.16.25-.64.81-.78.97-.15.17-.29.19-.53.07-.26-.13-1.06-.39-2.03-1.24-.75-.67-1.26-1.5-1.4-1.74-.15-.25-.02-.38.11-.5.11-.11.27-.29.37-.44.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43-.14 0-.3-.01-.47-.01z"/>
+                    </svg>
+                    Über WhatsApp schicken
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    (function() {
+        var input = document.getElementById('kundennummer');
+        var btnGen = document.getElementById('btn-generieren');
+        var form = document.getElementById('empfehlung-form');
+        var backdrop = document.getElementById('modal-backdrop');
+        var closeBtn = document.getElementById('modal-close');
+        var modalKunde = document.getElementById('modal-kundennummer');
+        var modalLink = document.getElementById('modal-link');
+        var btnCopy = document.getElementById('btn-copy');
+        var btnFunnel = document.getElementById('btn-funnel');
+        var btnWa = document.getElementById('btn-whatsapp');
+        var iconCopy = document.getElementById('icon-copy');
+        var iconCheck = document.getElementById('icon-check');
+
+        var FUNNEL_BASE = 'https://gastroekg.convertive.app/funnel/gastro-einkaufsgemeinschaft';
+
+        function buildFunnelUrl(kn) {
+            return FUNNEL_BASE + '?kunde=' + encodeURIComponent(kn);
+        }
+        function buildWhatsappUrl(funnelUrl) {
+            var text = 'Mein persönlicher Empfehlungslink zur Gastro-Einkaufsgemeinschaft:\n\n' + funnelUrl;
+            return 'https://wa.me/?text=' + encodeURIComponent(text);
+        }
+
+        input.addEventListener('input', function() {
+            btnGen.disabled = ! input.value.trim();
+        });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var kn = input.value.trim();
+            if (! kn) return;
+            var url = buildFunnelUrl(kn);
+            modalKunde.textContent = kn;
+            modalLink.textContent = url;
+            btnFunnel.href = url;
+            btnWa.href = buildWhatsappUrl(url);
+            resetCopyState();
+            openModal();
+        });
+
+        function openModal() { backdrop.classList.add('is-open'); }
+        function closeModal() { backdrop.classList.remove('is-open'); }
+        closeBtn.addEventListener('click', closeModal);
+        backdrop.addEventListener('click', function(e) {
+            if (e.target === backdrop) closeModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        function resetCopyState() {
+            btnCopy.classList.remove('is-copied');
+            iconCopy.style.display = '';
+            iconCheck.style.display = 'none';
+        }
+        function showCopied() {
+            btnCopy.classList.add('is-copied');
+            iconCopy.style.display = 'none';
+            iconCheck.style.display = '';
+            setTimeout(resetCopyState, 2500);
+        }
+
+        btnCopy.addEventListener('click', function() {
+            var url = modalLink.textContent;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(showCopied).catch(fallbackCopy.bind(null, url));
+            } else {
+                fallbackCopy(url);
+            }
+        });
+        function fallbackCopy(text) {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); showCopied(); } catch (e) {}
+            document.body.removeChild(ta);
+        }
+    })();
+</script>
+
+</body>
+</html>
