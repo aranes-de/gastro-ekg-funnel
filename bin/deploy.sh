@@ -41,6 +41,16 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
+# Gebaut wird aus dem lokalen Arbeitsbaum. Weicht der von origin ab, wuerde ein
+# Deploy den gepushten Stand eines Kollegen kommentarlos ueberschreiben.
+git fetch -q origin "$DEPLOY_BRANCH"
+if [ "$(git rev-parse HEAD)" != "$(git rev-parse "origin/$DEPLOY_BRANCH")" ]; then
+  echo "FEHLER: HEAD und origin/$DEPLOY_BRANCH sind verschieden - erst pullen bzw. pushen." >&2
+  echo "        lokal:  $(git rev-parse --short HEAD)" >&2
+  echo "        remote: $(git rev-parse --short "origin/$DEPLOY_BRANCH")" >&2
+  exit 1
+fi
+
 RELEASE="$(date +%Y%m%d%H%M%S)"
 REMOTE_RELEASE="$BASE/releases/$RELEASE"
 
