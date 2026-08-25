@@ -65,7 +65,9 @@ ssh "$SSH_HOST" bash -s <<EOF
 set -euo pipefail
 cd '$BASE/releases'
 LIVE="\$(basename "\$(readlink -f '$BASE/current')")"
-ls -1dt */ | sed 's#/\$##' | grep -vx "\$LIVE" | tail -n +$KEEP | xargs -r rm -rf
+# grep liefert Exit 1, wenn nichts uebrig bleibt (erstes Release = LIVE) -
+# mit pipefail waere das ein Abbruch, obwohl nichts zu tun ist.
+ls -1dt */ | sed 's#/\$##' | { grep -vx "\$LIVE" || true; } | tail -n +$KEEP | xargs -r rm -rf
 EOF
 
 echo "==> Fertig: https://empfehlen.gastro-einkaufsgemeinschaft.de/ (Release $RELEASE)"
