@@ -31,11 +31,24 @@ permalink: /index.html
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            background: linear-gradient(rgba(31,33,36,0.55), rgba(31,33,36,0.65)), url('/images/hero.jpeg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
+            overflow: hidden;
         }
+        /* Hintergrundbild: an der rechten Kante verankert, leicht vergrössert,
+           damit der Bildinhalt auch auf breiten Screens nach links rueckt. */
+        .page::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background-image: linear-gradient(rgba(31,33,36,0.55), rgba(31,33,36,0.65)), url('/images/hero2.jpeg');
+            background-size: cover;
+            background-position: right center;
+            background-repeat: no-repeat;
+            transform: scale(1.18);
+            transform-origin: right center;
+        }
+        .site-header,
+        .hero { position: relative; z-index: 1; }
         .container {
             max-width: 1600px;
             margin: 0 auto;
@@ -94,26 +107,40 @@ permalink: /index.html
             color: #ffffff;
         }
         .hero__inner {
-            max-width: 640px;
+            max-width: 880px;
             margin: 0 auto;
             text-align: center;
             text-shadow: 0 1px 2px rgba(0,0,0,0.25);
         }
         .hero h1 {
-            font-size: 48px;
-            line-height: 1.15;
+            font-size: 44px;
+            line-height: 1.12;
             font-weight: 700;
+            letter-spacing: -0.01em;
         }
         @media (max-width: 768px) {
             .hero h1 { font-size: 32px; }
         }
-        .hero p {
-            margin-top: 24px;
+        .hero__lead {
+            max-width: 720px;
+            margin: 18px auto 0;
             font-size: 18px;
-            line-height: 1.6;
+            line-height: 1.5;
+            font-weight: 600;
         }
         @media (max-width: 768px) {
-            .hero p { font-size: 16px; }
+            .hero__lead { font-size: 16px; }
+        }
+        .hero__text {
+            margin-top: 20px;
+            font-size: 15px;
+            line-height: 1.55;
+            color: rgba(255,255,255,0.92);
+        }
+        .hero__text p + p { margin-top: 10px; }
+        .hero__text strong { font-weight: 700; color: #ffffff; }
+        @media (max-width: 768px) {
+            .hero__text { font-size: 14px; line-height: 1.6; }
         }
 
         /* Form */
@@ -122,7 +149,8 @@ permalink: /index.html
             flex-wrap: wrap;
             gap: 12px;
             justify-content: center;
-            margin-top: 30px;
+            max-width: 620px;
+            margin: 28px auto 0;
         }
         .input-kundennummer {
             flex: 1 1 340px;
@@ -169,6 +197,7 @@ permalink: /index.html
         /* Footer */
         .site-footer {
             position: relative;
+            z-index: 1;
             background-color: #15171a;
             color: #ffffff;
             font-size: 12px;
@@ -352,13 +381,28 @@ permalink: /index.html
     <main id="top" class="hero">
         <div class="container">
             <div class="hero__inner">
-                <h1>Lorem ipsum dolor sit amet</h1>
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.<br>
-                    Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.<br>
-                    Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.<br>
-                    Duis aute irure dolor in reprehenderit in voluptate velit esse cillum.
+                <h1>Ihr bester Tipp unter Kollegen – von uns mit bis zu 500 € belohnt.</h1>
+                <p class="hero__lead">
+                    Empfehlen Sie die Gastro Einkaufsgemeinschaft weiter – in zwei Minuten, bequem über unser Formular.
                 </p>
+                <div class="hero__text">
+                    <p>
+                        <strong>Sie wissen, was unsere Gemeinschaft bringt: bessere Konditionen, weniger Aufwand,
+                        bares Geld.</strong> Und Sie kennen garantiert jemanden, der davon noch nichts hat –
+                        den Wirt aus dem Nachbarort, die Betreiberin des Hotels nebenan, den Küchenchef aus dem
+                        alten Betrieb.
+                    </p>
+                    <p>
+                        Genau diese Empfehlung ist uns was wert. Denn mit jedem neuen Mitglied wächst unsere
+                        Verhandlungsbasis – und damit auch Ihre Konditionen.
+                    </p>
+                    <p>
+                        <strong>So einfach geht’s:</strong> Tragen Sie Ihre Empfehlung mit vollständigen Kontaktdaten
+                        in unser Formular ein – dafür erhalten Sie <strong>250 €</strong>. Wird aus Ihrer Empfehlung
+                        ein Mitglied, das mindestens 12 Monate dabei ist, legen wir <strong>nochmal 250 €</strong>
+                        drauf. Den Rest übernehmen wir: Wir rufen an, wir beraten, wir kümmern uns.
+                    </p>
+                </div>
                 <form id="empfehlung-form" class="hero__form" autocomplete="off">
                     <input
                         type="text"
@@ -368,7 +412,7 @@ permalink: /index.html
                         class="input-kundennummer"
                         autocomplete="off"
                     >
-                    <button type="submit" class="btn-generieren" id="btn-generieren" disabled>Link generieren</button>
+                    <button type="submit" class="btn-generieren" id="btn-generieren" disabled>Jetzt empfehlen</button>
                 </form>
             </div>
         </div>
