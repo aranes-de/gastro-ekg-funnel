@@ -5,7 +5,7 @@
   "description": "Empfehlungslink-Generator für Gastro-Einkaufsgemeinschaft",
   "scripts": {
     "build": "npx @11ty/eleventy",
-    "dev": "npx @11ty/eleventy --serve"
+    "dev": "npx @11ty/eleventy --watch"
   },
   "dependencies": {
     "@11ty/eleventy": "^3.1.2"

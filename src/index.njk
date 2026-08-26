@@ -194,6 +194,21 @@ permalink: /index.html
         }
         .btn-generieren:disabled { opacity: 0.5; cursor: not-allowed; }
 
+        /* Fehlerzustand der Kundennummer-Pruefung. Spiegelt den Aufbau des
+           :focus-Zustands oben, damit sich die beiden nicht beissen. */
+        .form-error {
+            flex: 1 1 100%;
+            margin: 0;
+            color: #ffd4d4;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .input-kundennummer.is-invalid {
+            border-color: #e5484d;
+            box-shadow: 0 0 0 4px rgba(229, 72, 77, 0.25);
+        }
+
         /* Footer */
         .site-footer {
             position: relative;
@@ -381,7 +396,19 @@ permalink: /index.html
     <main id="top" class="hero">
         <div class="container">
             <div class="hero__inner">
-                <h1>Ihr bester Tipp unter Kollegen – von uns mit bis zu 500 € belohnt.</h1>
+                <h1 id="hero-headline">{{ site.headlines[0] }}</h1>
+                <script>
+                    // Zufaellige Ueberschrift pro Aufruf. Das Skript steht bewusst direkt
+                    // hinter dem <h1> und nicht am Seitenende, damit der Wechsel vor dem
+                    // ersten Rendern passiert und nichts sichtbar springt. Ohne JavaScript
+                    // bleibt die serverseitig gerenderte erste Variante stehen.
+                    (function () {
+                        var headlines = {{ site.headlines | dump | safe }};
+                        if (headlines.length < 2) return;
+                        var el = document.getElementById('hero-headline');
+                        if (el) el.textContent = headlines[Math.floor(Math.random() * headlines.length)];
+                    })();
+                </script>
                 <p class="hero__lead">
                     Empfehlen Sie die Gastro Einkaufsgemeinschaft weiter – in zwei Minuten, bequem über unser Formular.
                 </p>
@@ -413,6 +440,7 @@ permalink: /index.html
                         autocomplete="off"
                     >
                     <button type="submit" class="btn-generieren" id="btn-generieren" disabled>Jetzt empfehlen</button>
+                    <p class="form-error" id="form-error" role="alert" hidden></p>
                 </form>
             </div>
         </div>
@@ -490,25 +518,71 @@ permalink: /index.html
         var btnWa = document.getElementById('btn-whatsapp');
         var iconCopy = document.getElementById('icon-copy');
         var iconCheck = document.getElementById('icon-check');
+        var errorEl = document.getElementById('form-error');
 
-        var FUNNEL_BASE = 'https://gastroekg.convertive.app/funnel/gastro-einkaufsgemeinschaft';
+        // Kommt aus src/_data/site.js: lokal die .localhost-Instanz, im Build Produktion.
+        var FUNNEL_BASE = '{{ site.funnelBase | safe }}';
+
+        // Parameternamen und Pruefregel ebenfalls aus site.js - dort und nur dort
+        // wird das Format der Kundennummer festgelegt.
+        var REFERRAL = {{ site.referral | dump | safe }};
+        var KN_PATTERN = new RegExp(REFERRAL.pattern);
 
         function buildFunnelUrl(kn) {
-            return FUNNEL_BASE + '?kunde=' + encodeURIComponent(kn);
+            return FUNNEL_BASE + '?' + REFERRAL.outParam + '=' + encodeURIComponent(kn);
         }
         function buildWhatsappUrl(funnelUrl) {
             var text = 'Mein persönlicher Empfehlungslink zur Gastro-Einkaufsgemeinschaft:\n\n' + funnelUrl;
             return 'https://wa.me/?text=' + encodeURIComponent(text);
         }
 
-        input.addEventListener('input', function() {
+        function syncButton() {
             btnGen.disabled = ! input.value.trim();
+        }
+
+        function showError(msg) {
+            errorEl.textContent = msg;
+            errorEl.hidden = false;
+            input.classList.add('is-invalid');
+        }
+        function clearError() {
+            errorEl.hidden = true;
+            errorEl.textContent = '';
+            input.classList.remove('is-invalid');
+        }
+
+        // Kundennummer aus der URL uebernehmen, wenn der Empfehler ueber seinen
+        // eigenen Link kommt (?r=... oder ?referrer=...). Der erste Treffer
+        // gewinnt, alle anderen Parameter werden ignoriert. Geprueft wird erst
+        // beim Absenden - so bleibt ein fehlerhafter Wert sichtbar und
+        // korrigierbar, statt stillschweigend zu verschwinden.
+        (function prefillFromUrl() {
+            var params = new URLSearchParams(window.location.search);
+            for (var i = 0; i < REFERRAL.inParams.length; i++) {
+                var value = (params.get(REFERRAL.inParams[i]) || '').trim();
+                if (value) {
+                    input.value = value;
+                    break;
+                }
+            }
+            syncButton();
+        })();
+
+        input.addEventListener('input', function() {
+            syncButton();
+            clearError();
         });
 
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             var kn = input.value.trim();
             if (! kn) return;
+            if (! KN_PATTERN.test(kn)) {
+                showError(REFERRAL.errorMessage);
+                input.focus();
+                return;
+            }
+            clearError();
             var url = buildFunnelUrl(kn);
             modalKunde.textContent = kn;
             modalLink.textContent = url;
