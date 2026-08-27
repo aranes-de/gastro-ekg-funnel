@@ -330,16 +330,38 @@ permalink: /index.html
 
         .share {
             display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 16px;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 14px;
             margin-top: 30px;
         }
-        .share__label {
+        .share__label,
+        .share__hint {
             font-size: 14px;
             font-weight: 700;
             color: #1f2124;
         }
+        /* Grosser Teilen-Button: oeffnet das Teilen-Menue des Systems.
+           Startet hidden und wird nur eingeblendet, wenn navigator.share
+           existiert - sonst stuende hier ein Button ohne Funktion. */
+        .btn-share {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            height: 52px;
+            border: none;
+            border-radius: 9999px;
+            background-color: #F7A712;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-share:hover { background-color: #d8910a; }
+        .btn-share[hidden] { display: none; }
         .share__list {
             display: flex;
             flex-wrap: wrap;
@@ -347,6 +369,19 @@ permalink: /index.html
             list-style: none;
             margin: 0;
             padding: 0;
+        }
+        .share__list li {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        /* Name des Dienstes unter dem Icon - nur dort, wo es keinen Hover
+           gibt (Touch). Am Desktop uebernimmt das der Tooltip weiter unten. */
+        .share__name {
+            display: none;
+            font-size: 11px;
+            color: #6b7280;
         }
         .share__item {
             position: relative;
@@ -402,14 +437,48 @@ permalink: /index.html
             border: 6px solid transparent;
             border-top-color: #1f2124;
         }
-        .share__item:hover::before,
-        .share__item:hover::after,
         .share__item:focus-visible::before,
         .share__item:focus-visible::after,
         .share__item.is-hinted::before,
         .share__item.is-hinted::after {
             opacity: 1;
             transform: translate(-50%, 0);
+        }
+        /* Nur auf Geraeten mit echtem Hover. Auf Touch bliebe der Tooltip
+           nach dem Antippen haengen - dort steht ohnehin der Name darunter.
+           Die is-hinted-Rueckmeldung oben gilt weiter fuer alle Geraete. */
+        @media (hover: hover) {
+            .share__item:hover::before,
+            .share__item:hover::after {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+
+        @media (hover: none), (max-width: 640px) {
+            .share__name { display: block; }
+            /* Mit Beschriftung sind die Eintraege breiter als die 44px-Icons.
+               Auf sehr schmalen Screens rutscht der letzte in eine zweite
+               Zeile - zentriert sieht das gewollt aus statt abgerissen. */
+            .share__list {
+                width: 100%;
+                gap: 14px 12px;
+                justify-content: space-evenly;
+            }
+            .modal-backdrop {
+                padding: 12px;
+                align-items: flex-start;
+                overflow-y: auto;
+            }
+            .modal {
+                padding: 28px 20px 24px;
+                border-radius: 14px;
+            }
+            .link-row {
+                padding-left: 14px;
+                gap: 8px;
+            }
+            .link-row__url { font-size: 12px; }
         }
     </style>
 </head>
@@ -541,7 +610,7 @@ permalink: /index.html
     </div>
     #}
 
-    {# === MODAL === #}
+    {# === MODAL (alt, ersetzt durch Teilen-Modal mit Share-API weiter unten) ===
     <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="modal" role="document">
             <button type="button" class="modal__close" id="modal-close" aria-label="Schließen">
@@ -608,7 +677,94 @@ permalink: /index.html
             </div>
         </div>
     </div>
+    #}
 
+</div>
+
+{# === MODAL (Web Share API) ===
+   Steht bewusst ausserhalb von .page: das Backdrop ist position:fixed und
+   soll vom overflow:hidden des Wrappers unabhaengig bleiben. #}
+<div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal" role="document">
+        <button type="button" class="modal__close" id="modal-close" aria-label="Schließen">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="20" height="20">
+                <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"/>
+            </svg>
+        </button>
+
+        <p class="modal__eyebrow" id="modal-title">Empfehlungslink</p>
+        <p class="modal__caption">Kundennummer: <strong id="modal-kundennummer"></strong></p>
+
+        <div class="link-row">
+            <span class="link-row__url" id="modal-link"></span>
+            <button type="button" class="link-row__copy" id="btn-copy" aria-label="Link kopieren" title="Link kopieren">
+                <svg id="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="16" height="16">
+                    <path d="M5 3.25V4H2.75A1.75 1.75 0 0 0 1 5.75v7.5A1.75 1.75 0 0 0 2.75 15h7.5A1.75 1.75 0 0 0 12 13.25V12h.75A1.75 1.75 0 0 0 14.5 10.25v-7.5A1.75 1.75 0 0 0 12.75 1h-6A1.75 1.75 0 0 0 5 3.25Zm.5 0a.25.25 0 0 1 .25-.25h6a.25.25 0 0 1 .25.25v7a.25.25 0 0 1-.25.25h-6a.25.25 0 0 1-.25-.25v-7Z"/>
+                    <path d="M2.5 5.5a.25.25 0 0 1 .25-.25H4V10.25c0 .966.784 1.75 1.75 1.75H10.5V13.25a.25.25 0 0 1-.25.25h-7.5a.25.25 0 0 1-.25-.25v-7.5Z"/>
+                </svg>
+                <svg id="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="16" height="16" style="display:none">
+                    <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="share">
+            {# Oeffnet das Teilen-Menue des Systems (navigator.share). Startet
+               hidden; das Skript blendet ihn nur ein, wo die API existiert -
+               in der Praxis auf Mobilgeraeten. #}
+            <button type="button" class="btn-share" id="btn-share-native" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">
+                    <path d="M12 2.25a1 1 0 0 1 .7.29l3.5 3.5a1 1 0 0 1-1.4 1.42L13 5.66V15a1 1 0 1 1-2 0V5.66L9.2 7.46a1 1 0 0 1-1.4-1.42l3.5-3.5a1 1 0 0 1 .7-.29Z"/>
+                    <path d="M5 12a1 1 0 0 1 1 1v6.25c0 .14.11.25.25.25h11.5c.14 0 .25-.11.25-.25V13a1 1 0 1 1 2 0v6.25A2.25 2.25 0 0 1 17.75 21.5H6.25A2.25 2.25 0 0 1 4 19.25V13a1 1 0 0 1 1-1Z"/>
+                </svg>
+                Teilen
+            </button>
+
+            <p class="share__hint" id="share-hint">Teilen:</p>
+            <ul class="share__list">
+                <li>
+                    <a href="#" class="share__item share__item--mail" id="share-mail" aria-label="Per E-Mail teilen" data-tip="E-Mail">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-hidden="true">
+                            <path d="M3 5.75A1.75 1.75 0 0 1 4.75 4h14.5A1.75 1.75 0 0 1 21 5.75v.42l-9 5.14-9-5.14v-.42Zm0 2.15v10.35c0 .966.784 1.75 1.75 1.75h14.5A1.75 1.75 0 0 0 21 18.25V7.9l-8.5 4.86a1 1 0 0 1-1 0L3 7.9Z"/>
+                        </svg>
+                    </a>
+                    <span class="share__name">E-Mail</span>
+                </li>
+                <li>
+                    <a href="#" target="_blank" rel="noopener" class="share__item share__item--whatsapp" id="share-whatsapp" aria-label="Per WhatsApp teilen" data-tip="WhatsApp">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-hidden="true">
+                            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zM8.53 7.33c-.16 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.16-.48-.27-.25-.14-1.47-.74-1.69-.82-.23-.08-.4-.12-.56.12-.16.25-.64.81-.78.97-.15.17-.29.19-.53.07-.26-.13-1.06-.39-2.03-1.24-.75-.67-1.26-1.5-1.4-1.74-.15-.25-.02-.38.11-.5.11-.11.27-.29.37-.44.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43-.14 0-.3-.01-.47-.01z"/>
+                        </svg>
+                    </a>
+                    <span class="share__name">WhatsApp</span>
+                </li>
+                <li>
+                    <a href="#" target="_blank" rel="noopener" class="share__item share__item--telegram" id="share-telegram" aria-label="Per Telegram teilen" data-tip="Telegram">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-hidden="true">
+                            <path d="M21.94 4.6 18.9 19.2c-.23 1.02-.84 1.27-1.7.79l-4.7-3.46-2.27 2.18c-.25.25-.46.46-.94.46l.33-4.79 8.7-7.86c.38-.34-.08-.53-.59-.19L6.98 13.1l-4.63-1.45c-1.01-.31-1.03-1 .21-1.48l18.1-6.98c.84-.31 1.57.19 1.28 1.41Z"/>
+                        </svg>
+                    </a>
+                    <span class="share__name">Telegram</span>
+                </li>
+                <li>
+                    <button type="button" class="share__item share__item--signal" id="share-signal" aria-label="Per Signal teilen" data-tip="Signal">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-hidden="true">
+                            <path d="M12 2C6.48 2 2 6.13 2 11.22c0 2.6 1.17 4.95 3.05 6.63l-.94 3.4a.6.6 0 0 0 .77.73l3.63-1.22c1.1.36 2.28.55 3.49.55 5.52 0 10-4.13 10-9.22C22 6.13 17.52 2 12 2Z"/>
+                        </svg>
+                    </button>
+                    <span class="share__name">Signal</span>
+                </li>
+                <li>
+                    <a href="#" target="_blank" rel="noopener" class="share__item share__item--messenger" id="share-messenger" aria-label="Per Facebook Messenger teilen" data-tip="Messenger">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-hidden="true">
+                            <path d="M12 2C6.3 2 2 6.17 2 11.8c0 2.94 1.21 5.49 3.18 7.25.17.15.27.35.27.57l.06 1.8c.02.57.61.95 1.14.72l2.01-.89c.17-.07.36-.09.54-.04 1.19.33 2.46.48 3.8.42 5.7-.26 9-4.2 9-9.83C22 6.17 17.7 2 12 2Zm6 7.55-2.94 4.66c-.47.74-1.47.93-2.18.4l-2.34-1.75a.6.6 0 0 0-.72 0l-3.16 2.4c-.42.32-.97-.18-.69-.63l2.94-4.66c.47-.74 1.47-.93 2.18-.4l2.34 1.75a.6.6 0 0 0 .72 0l3.16-2.4c.42-.32.97.18.69.63Z"/>
+                        </svg>
+                    </a>
+                    <span class="share__name">Messenger</span>
+                </li>
+            </ul>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -626,6 +782,8 @@ permalink: /index.html
         var shareTg = document.getElementById('share-telegram');
         var shareSignal = document.getElementById('share-signal');
         var shareMessenger = document.getElementById('share-messenger');
+        var btnShareNative = document.getElementById('btn-share-native');
+        var shareHint = document.getElementById('share-hint');
         var iconCopy = document.getElementById('icon-copy');
         var iconCheck = document.getElementById('icon-check');
         var errorEl = document.getElementById('form-error');
@@ -665,7 +823,9 @@ permalink: /index.html
         // Facebook Messenger: private Nachricht an Freunde, kein oeffentlicher
         // Beitrag. Der Web-Dialog braucht eine Facebook-App-ID (site.js,
         // messengerAppId). Ohne ID bleibt nur fb-messenger://, das die App auf
-        // dem Handy oeffnet - am Desktop passiert dann nichts.
+        // dem Handy oeffnet - deshalb faengt der Click-Handler weiter unten
+        // den Fall ohne App-ID ab und nimmt stattdessen das Teilen-Menue
+        // bzw. die Zwischenablage.
         function buildMessengerUrl(funnelUrl) {
             if (MESSENGER_APP_ID) {
                 return 'https://www.facebook.com/dialog/send'
@@ -674,6 +834,23 @@ permalink: /index.html
                     + '&redirect_uri=' + encodeURIComponent(window.location.href);
             }
             return 'fb-messenger://share/?link=' + encodeURIComponent(funnelUrl);
+        }
+
+        // Teilen-Menue des Systems. Gibt es nur in einem Secure Context
+        // (https, lokal auch .localhost) und praktisch nur auf Mobilgeraeten -
+        // Desktop-Chrome und Firefox kennen navigator.share nicht. Wo es fehlt,
+        // greift ueberall der Kopier-Fallback.
+        function nativeSharePayload(url) {
+            return { title: SHARE_SUBJECT, text: SHARE_INTRO, url: url };
+        }
+        function canNativeShare(url) {
+            if (! navigator.share) return false;
+            if (navigator.canShare) return navigator.canShare(nativeSharePayload(url));
+            return true;
+        }
+        function nativeShare(url) {
+            // Bricht der Nutzer das Menue ab, wirft share() - das ist kein Fehler.
+            navigator.share(nativeSharePayload(url)).catch(function() {});
         }
 
         function syncButton() {
@@ -730,12 +907,23 @@ permalink: /index.html
             shareWa.href = buildWhatsappUrl(url);
             shareTg.href = buildTelegramUrl(url);
             shareMessenger.href = buildMessengerUrl(url);
+            var supported = canNativeShare(url);
+            btnShareNative.hidden = ! supported;
+            shareHint.textContent = supported ? 'oder direkt:' : 'Teilen:';
             resetCopyState();
             openModal();
         });
 
-        function openModal() { backdrop.classList.add('is-open'); }
-        function closeModal() { backdrop.classList.remove('is-open'); }
+        // Body-Scroll sperren, damit auf dem Handy nicht die Seite hinter dem
+        // Modal wegscrollt.
+        function openModal() {
+            backdrop.classList.add('is-open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal() {
+            backdrop.classList.remove('is-open');
+            document.body.style.overflow = '';
+        }
         closeBtn.addEventListener('click', closeModal);
         backdrop.addEventListener('click', function(e) {
             if (e.target === backdrop) closeModal();
@@ -759,6 +947,10 @@ permalink: /index.html
         btnCopy.addEventListener('click', function() {
             copyToClipboard(modalLink.textContent, showCopied);
         });
+        btnShareNative.addEventListener('click', function() {
+            nativeShare(modalLink.textContent);
+        });
+
         // Signal hat keinen Web-Endpunkt zum Teilen: sgnl://send?text=... oeffnet
         // zwar die App, uebergibt den Text aber nicht. Deshalb der Umweg ueber
         // das Teilen-Menue des Systems - dort taucht Signal als Ziel auf und
@@ -766,16 +958,30 @@ permalink: /index.html
         // landet der Link in der Zwischenablage.
         shareSignal.addEventListener('click', function() {
             var url = modalLink.textContent;
-            if (navigator.share) {
-                navigator.share({
-                    title: SHARE_SUBJECT,
-                    text: SHARE_INTRO,
-                    url: url
-                }).catch(function() {});
+            if (canNativeShare(url)) {
+                nativeShare(url);
                 return;
             }
             copyToClipboard(shareText(url), function() {
                 hintTooltip(shareSignal, 'In Signal einfügen');
+            });
+        });
+
+        // Messenger: mit App-ID oeffnet der href den Web-Dialog, dann bleibt
+        // der Klick unangetastet. Ohne App-ID zeigt der href nur auf
+        // fb-messenger:// - das laeuft am Desktop ins Leere, deshalb dort
+        // dieselbe Reihenfolge wie bei Signal: Teilen-Menue, sonst kopieren.
+        shareMessenger.addEventListener('click', function(e) {
+            if (MESSENGER_APP_ID) return;
+            var url = modalLink.textContent;
+            if (canNativeShare(url)) {
+                e.preventDefault();
+                nativeShare(url);
+                return;
+            }
+            e.preventDefault();
+            copyToClipboard(shareText(url), function() {
+                hintTooltip(shareMessenger, 'In Messenger einfügen');
             });
         });
 
