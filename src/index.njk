@@ -351,6 +351,9 @@ permalink: /index.html
         .share__item {
             position: relative;
             display: inline-flex;
+            border: none;
+            padding: 0;
+            cursor: pointer;
             align-items: center;
             justify-content: center;
             width: 44px;
@@ -402,7 +405,9 @@ permalink: /index.html
         .share__item:hover::before,
         .share__item:hover::after,
         .share__item:focus-visible::before,
-        .share__item:focus-visible::after {
+        .share__item:focus-visible::after,
+        .share__item.is-hinted::before,
+        .share__item.is-hinted::after {
             opacity: 1;
             transform: translate(-50%, 0);
         }
@@ -586,11 +591,11 @@ permalink: /index.html
                         </a>
                     </li>
                     <li>
-                        <a href="#" target="_blank" rel="noopener" class="share__item share__item--signal" id="share-signal" aria-label="Per Signal teilen" data-tip="Signal">
+                        <button type="button" class="share__item share__item--signal" id="share-signal" aria-label="Per Signal teilen" data-tip="Signal">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-hidden="true">
                                 <path d="M12 2C6.48 2 2 6.13 2 11.22c0 2.6 1.17 4.95 3.05 6.63l-.94 3.4a.6.6 0 0 0 .77.73l3.63-1.22c1.1.36 2.28.55 3.49.55 5.52 0 10-4.13 10-9.22C22 6.13 17.52 2 12 2Z"/>
                             </svg>
-                        </a>
+                        </button>
                     </li>
                     <li>
                         <a href="#" target="_blank" rel="noopener" class="share__item share__item--messenger" id="share-messenger" aria-label="Per Facebook Messenger teilen" data-tip="Messenger">
@@ -656,11 +661,6 @@ permalink: /index.html
         function buildTelegramUrl(funnelUrl) {
             return 'https://t.me/share/url?url=' + encodeURIComponent(funnelUrl)
                 + '&text=' + encodeURIComponent(SHARE_INTRO);
-        }
-        // Signal kennt keinen Web-Share-Endpunkt; sgnl:// oeffnet die App,
-        // sofern sie auf dem Geraet installiert ist.
-        function buildSignalUrl(funnelUrl) {
-            return 'sgnl://send?text=' + encodeURIComponent(shareText(funnelUrl));
         }
         // Facebook Messenger: private Nachricht an Freunde, kein oeffentlicher
         // Beitrag. Der Web-Dialog braucht eine Facebook-App-ID (site.js,
@@ -729,7 +729,6 @@ permalink: /index.html
             shareMail.href = buildMailUrl(url);
             shareWa.href = buildWhatsappUrl(url);
             shareTg.href = buildTelegramUrl(url);
-            shareSignal.href = buildSignalUrl(url);
             shareMessenger.href = buildMessengerUrl(url);
             resetCopyState();
             openModal();
@@ -758,21 +757,57 @@ permalink: /index.html
         }
 
         btnCopy.addEventListener('click', function() {
-            var url = modalLink.textContent;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(url).then(showCopied).catch(fallbackCopy.bind(null, url));
-            } else {
-                fallbackCopy(url);
-            }
+            copyToClipboard(modalLink.textContent, showCopied);
         });
-        function fallbackCopy(text) {
+        // Signal hat keinen Web-Endpunkt zum Teilen: sgnl://send?text=... oeffnet
+        // zwar die App, uebergibt den Text aber nicht. Deshalb der Umweg ueber
+        // das Teilen-Menue des Systems - dort taucht Signal als Ziel auf und
+        // bekommt den Text vollstaendig. Wo es das nicht gibt (meist Desktop),
+        // landet der Link in der Zwischenablage.
+        shareSignal.addEventListener('click', function() {
+            var url = modalLink.textContent;
+            if (navigator.share) {
+                navigator.share({
+                    title: SHARE_SUBJECT,
+                    text: SHARE_INTRO,
+                    url: url
+                }).catch(function() {});
+                return;
+            }
+            copyToClipboard(shareText(url), function() {
+                hintTooltip(shareSignal, 'In Signal einfügen');
+            });
+        });
+
+        // Zeigt kurz einen anderen Tooltip-Text am Icon und stellt danach den
+        // urspruenglichen wieder her.
+        function hintTooltip(el, text) {
+            var original = el.getAttribute('data-tip');
+            el.setAttribute('data-tip', text);
+            el.classList.add('is-hinted');
+            setTimeout(function() {
+                el.classList.remove('is-hinted');
+                el.setAttribute('data-tip', original);
+            }, 2500);
+        }
+
+        function copyToClipboard(text, onDone) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(onDone).catch(function() {
+                    execCopy(text, onDone);
+                });
+                return;
+            }
+            execCopy(text, onDone);
+        }
+        function execCopy(text, onDone) {
             var ta = document.createElement('textarea');
             ta.value = text;
             ta.style.position = 'fixed';
             ta.style.opacity = '0';
             document.body.appendChild(ta);
             ta.select();
-            try { document.execCommand('copy'); showCopied(); } catch (e) {}
+            try { document.execCommand('copy'); onDone(); } catch (e) {}
             document.body.removeChild(ta);
         }
     })();
