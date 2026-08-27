@@ -370,6 +370,10 @@ permalink: /index.html
             margin: 0;
             padding: 0;
         }
+        /* display aus den Regeln oben wuerde das hidden-Attribut sonst
+           ueberstimmen - die Icons weichen dem System-Menue. */
+        .share__list[hidden],
+        .share__hint[hidden] { display: none; }
         .share__list li {
             display: flex;
             flex-direction: column;
@@ -444,6 +448,17 @@ permalink: /index.html
             opacity: 1;
             transform: translate(-50%, 0);
         }
+        /* Mittig ueber dem letzten Icon haengt der Tooltip ueber dem
+           Modalrand - dort deshalb rechtsbuendig. Der Pfeil bleibt mittig. */
+        .share__list li:last-child .share__item::before {
+            left: auto;
+            right: 0;
+            transform: translate(0, 4px);
+        }
+        .share__list li:last-child .share__item:focus-visible::before,
+        .share__list li:last-child .share__item.is-hinted::before {
+            transform: translate(0, 0);
+        }
         /* Nur auf Geraeten mit echtem Hover. Auf Touch bliebe der Tooltip
            nach dem Antippen haengen - dort steht ohnehin der Name darunter.
            Die is-hinted-Rueckmeldung oben gilt weiter fuer alle Geraete. */
@@ -452,6 +467,9 @@ permalink: /index.html
             .share__item:hover::after {
                 opacity: 1;
                 transform: translate(-50%, 0);
+            }
+            .share__list li:last-child .share__item:hover::before {
+                transform: translate(0, 0);
             }
         }
 
@@ -711,17 +729,20 @@ permalink: /index.html
         <div class="share">
             {# Oeffnet das Teilen-Menue des Systems (navigator.share). Startet
                hidden; das Skript blendet ihn nur ein, wo die API existiert -
-               in der Praxis auf Mobilgeraeten. #}
+               in der Praxis auf Mobilgeraeten. Dort verschwinden dafuer die
+               Einzel-Icons darunter, das System-Menue deckt sie mit ab. #}
             <button type="button" class="btn-share" id="btn-share-native" hidden>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">
-                    <path d="M12 2.25a1 1 0 0 1 .7.29l3.5 3.5a1 1 0 0 1-1.4 1.42L13 5.66V15a1 1 0 1 1-2 0V5.66L9.2 7.46a1 1 0 0 1-1.4-1.42l3.5-3.5a1 1 0 0 1 .7-.29Z"/>
-                    <path d="M5 12a1 1 0 0 1 1 1v6.25c0 .14.11.25.25.25h11.5c.14 0 .25-.11.25-.25V13a1 1 0 1 1 2 0v6.25A2.25 2.25 0 0 1 17.75 21.5H6.25A2.25 2.25 0 0 1 4 19.25V13a1 1 0 0 1 1-1Z"/>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20" aria-hidden="true">
+                    <path d="M8.6 10.5 15.4 6.5M8.6 13.5 15.4 17.5"/>
+                    <circle cx="18" cy="5" r="3" fill="currentColor" stroke="none"/>
+                    <circle cx="6" cy="12" r="3" fill="currentColor" stroke="none"/>
+                    <circle cx="18" cy="19" r="3" fill="currentColor" stroke="none"/>
                 </svg>
                 Teilen
             </button>
 
             <p class="share__hint" id="share-hint">Teilen:</p>
-            <ul class="share__list">
+            <ul class="share__list" id="share-list">
                 <li>
                     <a href="#" class="share__item share__item--mail" id="share-mail" aria-label="Per E-Mail teilen" data-tip="E-Mail">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-hidden="true">
@@ -784,6 +805,7 @@ permalink: /index.html
         var shareMessenger = document.getElementById('share-messenger');
         var btnShareNative = document.getElementById('btn-share-native');
         var shareHint = document.getElementById('share-hint');
+        var shareList = document.getElementById('share-list');
         var iconCopy = document.getElementById('icon-copy');
         var iconCheck = document.getElementById('icon-check');
         var errorEl = document.getElementById('form-error');
@@ -820,12 +842,16 @@ permalink: /index.html
             return 'https://t.me/share/url?url=' + encodeURIComponent(funnelUrl)
                 + '&text=' + encodeURIComponent(SHARE_INTRO);
         }
+        // Signal kennt keinen Weg, Text von aussen in ein Gespraech zu legen:
+        // sgnl://send oeffnet die App, uebergibt den Text aber nicht. Der
+        // Klick kopiert ihn deshalb zusaetzlich in die Zwischenablage.
+        function buildSignalUrl(funnelUrl) {
+            return 'sgnl://send?text=' + encodeURIComponent(shareText(funnelUrl));
+        }
         // Facebook Messenger: private Nachricht an Freunde, kein oeffentlicher
         // Beitrag. Der Web-Dialog braucht eine Facebook-App-ID (site.js,
-        // messengerAppId). Ohne ID bleibt nur fb-messenger://, das die App auf
-        // dem Handy oeffnet - deshalb faengt der Click-Handler weiter unten
-        // den Fall ohne App-ID ab und nimmt stattdessen das Teilen-Menue
-        // bzw. die Zwischenablage.
+        // messengerAppId). Ohne ID bleibt nur fb-messenger://, das die
+        // installierte App oeffnet - mit demselben Kopier-Umweg wie bei Signal.
         function buildMessengerUrl(funnelUrl) {
             if (MESSENGER_APP_ID) {
                 return 'https://www.facebook.com/dialog/send'
@@ -907,9 +933,12 @@ permalink: /index.html
             shareWa.href = buildWhatsappUrl(url);
             shareTg.href = buildTelegramUrl(url);
             shareMessenger.href = buildMessengerUrl(url);
+            // Entweder das System-Menue oder die Einzel-Icons, nie beides:
+            // wo navigator.share existiert, fuehrt es zu denselben Apps.
             var supported = canNativeShare(url);
             btnShareNative.hidden = ! supported;
-            shareHint.textContent = supported ? 'oder direkt:' : 'Teilen:';
+            shareHint.hidden = supported;
+            shareList.hidden = supported;
             resetCopyState();
             openModal();
         });
@@ -951,38 +980,30 @@ permalink: /index.html
             nativeShare(modalLink.textContent);
         });
 
-        // Signal hat keinen Web-Endpunkt zum Teilen: sgnl://send?text=... oeffnet
-        // zwar die App, uebergibt den Text aber nicht. Deshalb der Umweg ueber
-        // das Teilen-Menue des Systems - dort taucht Signal als Ziel auf und
-        // bekommt den Text vollstaendig. Wo es das nicht gibt (meist Desktop),
-        // landet der Link in der Zwischenablage.
-        shareSignal.addEventListener('click', function() {
-            var url = modalLink.textContent;
-            if (canNativeShare(url)) {
-                nativeShare(url);
-                return;
-            }
-            copyToClipboard(shareText(url), function() {
-                hintTooltip(shareSignal, 'In Signal einfügen');
+        // Signal und Messenger nehmen keinen Text ueber einen Link entgegen.
+        // Beide bekommen deshalb denselben Ablauf: Nachricht in die
+        // Zwischenablage, dann die App ueber ihr eigenes Schema oeffnen, wo
+        // sie nur noch eingefuegt werden muss. Der Tooltip sagt das an.
+        // Die Icons stehen ohnehin nur da, wo es kein System-Menue gibt.
+        function copyAndOpenApp(el, appUrl, hint) {
+            copyToClipboard(shareText(modalLink.textContent), function() {
+                hintTooltip(el, hint);
             });
+            // Unbekanntes Schema laesst der Browser einfach liegen, die Seite
+            // bleibt stehen - der kopierte Text ist dann das Ergebnis.
+            window.location.href = appUrl;
+        }
+
+        shareSignal.addEventListener('click', function() {
+            copyAndOpenApp(shareSignal, buildSignalUrl(modalLink.textContent), 'Text kopiert – einfügen');
         });
 
-        // Messenger: mit App-ID oeffnet der href den Web-Dialog, dann bleibt
-        // der Klick unangetastet. Ohne App-ID zeigt der href nur auf
-        // fb-messenger:// - das laeuft am Desktop ins Leere, deshalb dort
-        // dieselbe Reihenfolge wie bei Signal: Teilen-Menue, sonst kopieren.
+        // Mit App-ID oeffnet der href den Web-Dialog von Facebook, der den
+        // Link selbst mitnimmt - dann bleibt der Klick unangetastet.
         shareMessenger.addEventListener('click', function(e) {
             if (MESSENGER_APP_ID) return;
-            var url = modalLink.textContent;
-            if (canNativeShare(url)) {
-                e.preventDefault();
-                nativeShare(url);
-                return;
-            }
             e.preventDefault();
-            copyToClipboard(shareText(url), function() {
-                hintTooltip(shareMessenger, 'In Messenger einfügen');
-            });
+            copyAndOpenApp(shareMessenger, buildMessengerUrl(modalLink.textContent), 'Text kopiert – einfügen');
         });
 
         // Zeigt kurz einen anderen Tooltip-Text am Icon und stellt danach den
