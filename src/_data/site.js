@@ -27,7 +27,13 @@ const REFERRAL = {
   outParam: "r",
 };
 
+// Facebook-App-ID fuer den Messenger-Teilen-Dialog. Leer lassen, solange
+// keine App eingerichtet ist - dann faellt das Icon auf fb-messenger://
+// zurueck, das nur auf Geraeten mit installierter App funktioniert.
+const MESSENGER_APP_ID = process.env.FB_APP_ID || "";
+
 module.exports = {
+  messengerAppId: MESSENGER_APP_ID,
   funnelBase: process.env.FUNNEL_BASE || (IS_BUILD ? FUNNEL_BASE_PROD : FUNNEL_BASE_DEV),
   // Ueberschriften fuer den Hero. Beim Aufruf wird per Zufall eine davon
   // angezeigt; ohne JavaScript bleibt die erste stehen. Reihenfolge egal,

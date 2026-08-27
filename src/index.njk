@@ -328,51 +328,84 @@ permalink: /index.html
         }
         .link-row__copy.is-copied { background-color: #86BC24; }
 
-        .modal__actions {
+        .share {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 30px;
+        }
+        .share__label {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1f2124;
+        }
+        .share__list {
             display: flex;
             flex-wrap: wrap;
             gap: 12px;
-            margin-top: 30px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
         }
-        .modal__actions > * { flex: 1; min-width: 200px; }
-
-        .btn-funnel {
+        .share__item {
+            position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            white-space: nowrap;
-            padding: 10px 30px;
+            width: 44px;
+            height: 44px;
             border-radius: 9999px;
-            border: 2px solid #1f2124;
+            color: #ffffff;
+            transition: transform 0.15s, filter 0.15s;
+        }
+        .share__item:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.08);
+        }
+        .share__item--mail { background-color: #1f2124; }
+        .share__item--whatsapp { background-color: #25D366; }
+        .share__item--telegram { background-color: #229ED9; }
+        .share__item--signal { background-color: #3A76F0; }
+        .share__item--messenger { background-color: #0084FF; }
+
+        /* Tooltip mit dem Namen des Dienstes - erscheint ueber dem Icon.
+           Reines CSS, der Text steht in data-tip. */
+        .share__item::before,
+        .share__item::after {
+            position: absolute;
+            left: 50%;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+        .share__item::before {
+            content: attr(data-tip);
+            bottom: calc(100% + 10px);
+            transform: translate(-50%, 4px);
+            padding: 5px 10px;
+            border-radius: 8px;
             background-color: #1f2124;
             color: #ffffff;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            transition: background-color 0.15s, border-color 0.15s;
-        }
-        .btn-funnel:hover { background-color: #2a2d31; border-color: #2a2d31; }
-
-        .btn-whatsapp {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            line-height: 1.3;
             white-space: nowrap;
-            padding: 10px 30px;
-            border-radius: 9999px;
-            border: 2px solid #25D366;
-            background-color: #25D366;
-            color: #ffffff;
-            font-size: 14px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            transition: background-color 0.15s, border-color 0.15s;
         }
-        .btn-whatsapp:hover { background-color: #1ebc55; border-color: #1ebc55; }
+        .share__item::after {
+            content: "";
+            bottom: calc(100% + 4px);
+            transform: translate(-50%, 4px);
+            border: 6px solid transparent;
+            border-top-color: #1f2124;
+        }
+        .share__item:hover::before,
+        .share__item:hover::after,
+        .share__item:focus-visible::before,
+        .share__item:focus-visible::after {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
     </style>
 </head>
 <body>
@@ -459,7 +492,7 @@ permalink: /index.html
         </div>
     </footer>
 
-    {# === MODAL === #}
+    {# === MODAL (alt, ersetzt durch Teilen-Modal weiter unten) ===
     <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="modal" role="document">
             <button type="button" class="modal__close" id="modal-close" aria-label="Schließen">
@@ -501,6 +534,75 @@ permalink: /index.html
             </div>
         </div>
     </div>
+    #}
+
+    {# === MODAL === #}
+    <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal" role="document">
+            <button type="button" class="modal__close" id="modal-close" aria-label="Schließen">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="20" height="20">
+                    <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"/>
+                </svg>
+            </button>
+
+            <p class="modal__eyebrow" id="modal-title">Empfehlungslink</p>
+            <p class="modal__caption">Kundennummer: <strong id="modal-kundennummer"></strong></p>
+
+            <div class="link-row">
+                <span class="link-row__url" id="modal-link"></span>
+                <button type="button" class="link-row__copy" id="btn-copy" aria-label="Link kopieren" title="Link kopieren">
+                    <svg id="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="16" height="16">
+                        <path d="M5 3.25V4H2.75A1.75 1.75 0 0 0 1 5.75v7.5A1.75 1.75 0 0 0 2.75 15h7.5A1.75 1.75 0 0 0 12 13.25V12h.75A1.75 1.75 0 0 0 14.5 10.25v-7.5A1.75 1.75 0 0 0 12.75 1h-6A1.75 1.75 0 0 0 5 3.25Zm.5 0a.25.25 0 0 1 .25-.25h6a.25.25 0 0 1 .25.25v7a.25.25 0 0 1-.25.25h-6a.25.25 0 0 1-.25-.25v-7Z"/>
+                        <path d="M2.5 5.5a.25.25 0 0 1 .25-.25H4V10.25c0 .966.784 1.75 1.75 1.75H10.5V13.25a.25.25 0 0 1-.25.25h-7.5a.25.25 0 0 1-.25-.25v-7.5Z"/>
+                    </svg>
+                    <svg id="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="16" height="16" style="display:none">
+                        <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="share">
+                <p class="share__label">Teilen:</p>
+                <ul class="share__list">
+                    <li>
+                        <a href="#" class="share__item share__item--mail" id="share-mail" aria-label="Per E-Mail teilen" data-tip="E-Mail">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-hidden="true">
+                                <path d="M3 5.75A1.75 1.75 0 0 1 4.75 4h14.5A1.75 1.75 0 0 1 21 5.75v.42l-9 5.14-9-5.14v-.42Zm0 2.15v10.35c0 .966.784 1.75 1.75 1.75h14.5A1.75 1.75 0 0 0 21 18.25V7.9l-8.5 4.86a1 1 0 0 1-1 0L3 7.9Z"/>
+                            </svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" target="_blank" rel="noopener" class="share__item share__item--whatsapp" id="share-whatsapp" aria-label="Per WhatsApp teilen" data-tip="WhatsApp">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-hidden="true">
+                                <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zM8.53 7.33c-.16 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.16-.48-.27-.25-.14-1.47-.74-1.69-.82-.23-.08-.4-.12-.56.12-.16.25-.64.81-.78.97-.15.17-.29.19-.53.07-.26-.13-1.06-.39-2.03-1.24-.75-.67-1.26-1.5-1.4-1.74-.15-.25-.02-.38.11-.5.11-.11.27-.29.37-.44.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43-.14 0-.3-.01-.47-.01z"/>
+                            </svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" target="_blank" rel="noopener" class="share__item share__item--telegram" id="share-telegram" aria-label="Per Telegram teilen" data-tip="Telegram">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-hidden="true">
+                                <path d="M21.94 4.6 18.9 19.2c-.23 1.02-.84 1.27-1.7.79l-4.7-3.46-2.27 2.18c-.25.25-.46.46-.94.46l.33-4.79 8.7-7.86c.38-.34-.08-.53-.59-.19L6.98 13.1l-4.63-1.45c-1.01-.31-1.03-1 .21-1.48l18.1-6.98c.84-.31 1.57.19 1.28 1.41Z"/>
+                            </svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" target="_blank" rel="noopener" class="share__item share__item--signal" id="share-signal" aria-label="Per Signal teilen" data-tip="Signal">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-hidden="true">
+                                <path d="M12 2C6.48 2 2 6.13 2 11.22c0 2.6 1.17 4.95 3.05 6.63l-.94 3.4a.6.6 0 0 0 .77.73l3.63-1.22c1.1.36 2.28.55 3.49.55 5.52 0 10-4.13 10-9.22C22 6.13 17.52 2 12 2Z"/>
+                            </svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" target="_blank" rel="noopener" class="share__item share__item--messenger" id="share-messenger" aria-label="Per Facebook Messenger teilen" data-tip="Messenger">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-hidden="true">
+                                <path d="M12 2C6.3 2 2 6.17 2 11.8c0 2.94 1.21 5.49 3.18 7.25.17.15.27.35.27.57l.06 1.8c.02.57.61.95 1.14.72l2.01-.89c.17-.07.36-.09.54-.04 1.19.33 2.46.48 3.8.42 5.7-.26 9-4.2 9-9.83C22 6.17 17.7 2 12 2Zm6 7.55-2.94 4.66c-.47.74-1.47.93-2.18.4l-2.34-1.75a.6.6 0 0 0-.72 0l-3.16 2.4c-.42.32-.97-.18-.69-.63l2.94-4.66c.47-.74 1.47-.93 2.18-.4l2.34 1.75a.6.6 0 0 0 .72 0l3.16-2.4c.42-.32.97.18.69.63Z"/>
+                            </svg>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
 </div>
 
@@ -514,14 +616,18 @@ permalink: /index.html
         var modalKunde = document.getElementById('modal-kundennummer');
         var modalLink = document.getElementById('modal-link');
         var btnCopy = document.getElementById('btn-copy');
-        var btnFunnel = document.getElementById('btn-funnel');
-        var btnWa = document.getElementById('btn-whatsapp');
+        var shareMail = document.getElementById('share-mail');
+        var shareWa = document.getElementById('share-whatsapp');
+        var shareTg = document.getElementById('share-telegram');
+        var shareSignal = document.getElementById('share-signal');
+        var shareMessenger = document.getElementById('share-messenger');
         var iconCopy = document.getElementById('icon-copy');
         var iconCheck = document.getElementById('icon-check');
         var errorEl = document.getElementById('form-error');
 
         // Kommt aus src/_data/site.js: lokal die .localhost-Instanz, im Build Produktion.
         var FUNNEL_BASE = '{{ site.funnelBase | safe }}';
+        var MESSENGER_APP_ID = '{{ site.messengerAppId | safe }}';
 
         // Parameternamen und Pruefregel ebenfalls aus site.js - dort und nur dort
         // wird das Format der Kundennummer festgelegt.
@@ -531,9 +637,43 @@ permalink: /index.html
         function buildFunnelUrl(kn) {
             return FUNNEL_BASE + '?' + REFERRAL.outParam + '=' + encodeURIComponent(kn);
         }
+
+        // Texte fuer die Teilen-Ziele. Der Link steht immer am Ende, damit ihn
+        // die Messenger als Vorschau erkennen.
+        var SHARE_SUBJECT = 'Empfehlung: Gastro-Einkaufsgemeinschaft';
+        var SHARE_INTRO = 'Mein persönlicher Empfehlungslink zur Gastro-Einkaufsgemeinschaft:';
+
+        function shareText(funnelUrl) {
+            return SHARE_INTRO + '\n\n' + funnelUrl;
+        }
+        function buildMailUrl(funnelUrl) {
+            return 'mailto:?subject=' + encodeURIComponent(SHARE_SUBJECT)
+                + '&body=' + encodeURIComponent(shareText(funnelUrl));
+        }
         function buildWhatsappUrl(funnelUrl) {
-            var text = 'Mein persönlicher Empfehlungslink zur Gastro-Einkaufsgemeinschaft:\n\n' + funnelUrl;
-            return 'https://wa.me/?text=' + encodeURIComponent(text);
+            return 'https://wa.me/?text=' + encodeURIComponent(shareText(funnelUrl));
+        }
+        function buildTelegramUrl(funnelUrl) {
+            return 'https://t.me/share/url?url=' + encodeURIComponent(funnelUrl)
+                + '&text=' + encodeURIComponent(SHARE_INTRO);
+        }
+        // Signal kennt keinen Web-Share-Endpunkt; sgnl:// oeffnet die App,
+        // sofern sie auf dem Geraet installiert ist.
+        function buildSignalUrl(funnelUrl) {
+            return 'sgnl://send?text=' + encodeURIComponent(shareText(funnelUrl));
+        }
+        // Facebook Messenger: private Nachricht an Freunde, kein oeffentlicher
+        // Beitrag. Der Web-Dialog braucht eine Facebook-App-ID (site.js,
+        // messengerAppId). Ohne ID bleibt nur fb-messenger://, das die App auf
+        // dem Handy oeffnet - am Desktop passiert dann nichts.
+        function buildMessengerUrl(funnelUrl) {
+            if (MESSENGER_APP_ID) {
+                return 'https://www.facebook.com/dialog/send'
+                    + '?app_id=' + encodeURIComponent(MESSENGER_APP_ID)
+                    + '&link=' + encodeURIComponent(funnelUrl)
+                    + '&redirect_uri=' + encodeURIComponent(window.location.href);
+            }
+            return 'fb-messenger://share/?link=' + encodeURIComponent(funnelUrl);
         }
 
         function syncButton() {
@@ -586,8 +726,11 @@ permalink: /index.html
             var url = buildFunnelUrl(kn);
             modalKunde.textContent = kn;
             modalLink.textContent = url;
-            btnFunnel.href = url;
-            btnWa.href = buildWhatsappUrl(url);
+            shareMail.href = buildMailUrl(url);
+            shareWa.href = buildWhatsappUrl(url);
+            shareTg.href = buildTelegramUrl(url);
+            shareSignal.href = buildSignalUrl(url);
+            shareMessenger.href = buildMessengerUrl(url);
             resetCopyState();
             openModal();
         });
